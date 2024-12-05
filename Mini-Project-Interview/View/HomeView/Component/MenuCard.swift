@@ -37,7 +37,12 @@ class MenuCard: UICollectionViewCell {
         return label
     }()
     
-    private lazy var cardTag = FilterTag(frame: .zero, labelText: "Indian")
+    private lazy var cardTag: FilterTag = {
+        let card = FilterTag()
+        card.label.text = "Testing"
+        
+        return card
+    }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -55,8 +60,7 @@ extension MenuCard{
         self.translatesAutoresizingMaskIntoConstraints = false
         self.backgroundColor = .systemBackground
         self.layer.cornerRadius = 10
-        self.layer.masksToBounds = true
-        
+        self.layer.masksToBounds = true        
         descriptionVStack.addArrangedSubview(cardTitle)
         descriptionVStack.addArrangedSubview(cardTag)
     
