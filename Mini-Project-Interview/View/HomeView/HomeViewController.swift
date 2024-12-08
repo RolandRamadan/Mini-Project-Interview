@@ -8,9 +8,9 @@
 import UIKit
 
 class HomeViewController: UIViewController {
-    private let filterTagData = ["Indian", "Chinese", "Japanese", "French", "Moroccan"]
     
     private var homeVM: HomeViewModel = HomeViewModel()
+    private var searchWorkItem: DispatchWorkItem?
     
     private lazy var tagHScrollView: UIScrollView = {
         let view = UIScrollView()
@@ -41,6 +41,8 @@ class HomeViewController: UIViewController {
         return collection
     }()
     
+    private lazy var searchController = UISearchController()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         bindViewModel()
@@ -55,7 +57,7 @@ private extension HomeViewController {
     func setup(){
         self.view.backgroundColor = .secondarySystemBackground
         self.navigationItem.title = "Choose Your Menu"
-        self.navigationItem.searchController = UISearchController()
+        self.navigationItem.searchController = searchController
         self.navigationItem.hidesSearchBarWhenScrolling = false
         
         view.addSubview(tagHScrollView)
@@ -65,7 +67,9 @@ private extension HomeViewController {
         MenuCollectionView.dataSource = self
         MenuCollectionView.register(MenuCard.self, forCellWithReuseIdentifier: "menu")
         
-        searchController.searchResultsUpdater = self searchController.obscuresBackgroundDuringPresentation = false searchController.searchBar.placeholder = "Search Fruits"
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Search Meals"
         
         configureAutoLayout()
         
@@ -114,9 +118,14 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
 }
 
 extension HomeViewController{
+    
+    
     private func addItemsToScrollView() {
-        for (_, text) in filterTagData.enumerated() {
+        
+        for (_, text) in homeVM.filterTagData.enumerated() {
+            let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(setFilter))
             let filterTag = FilterTag()
+            filterTag.addGestureRecognizer(tapGestureRecognizer)
             filterTag.backgroundColor = .systemBackground
             filterTag.translatesAutoresizingMaskIntoConstraints = false
             filterTag.label.text = text
@@ -134,7 +143,25 @@ extension HomeViewController {
 }
 
 extension HomeViewController: UISearchBarDelegate, UISearchResultsUpdating{
+    func updateSearchResults(for searchController: UISearchController) {
+//        searchWorkItem?.cancel()
+        
+//        let workItem = DispatchWorkItem { [weak self] in
+//            guard let self = self else { return }
+        let searchText = searchController.searchBar.text ?? ""
+        homeVM.updateMealData(for: searchText)
+//        }
+        
+//        searchWorkItem = workItem
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
+    }
+    
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) { searchBar.resignFirstResponder()
     }
+    
+    @objc func setFilter() {
+//        guard let url = URL(string: meal?.strYoutube ?? "google.com") else {return}
+    }
 }
+
