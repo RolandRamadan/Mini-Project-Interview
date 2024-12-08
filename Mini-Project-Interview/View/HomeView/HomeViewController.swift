@@ -8,16 +8,15 @@
 import UIKit
 
 class HomeViewController: UIViewController {
-    
-    private let menuData = ["1", "2", "3", "4", "6", "7", "8", "9"]
     private let filterTagData = ["Indian", "Chinese", "Japanese", "French", "Moroccan"]
+    
+    private var homeVM: HomeViewModel = HomeViewModel()
     
     private lazy var tagHScrollView: UIScrollView = {
         let view = UIScrollView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isScrollEnabled = true
         view.showsHorizontalScrollIndicator = false
-        view.backgroundColor = .red
         
         return view
     }()
@@ -27,16 +26,8 @@ class HomeViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .horizontal
         stack.spacing = 10
-        stack.backgroundColor = .blue
- 
+        
         return stack
-    }()
-    
-    private lazy var testLabel: UILabel = {
-        let label = UILabel()
-        label.text = "test"
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
     }()
     
     private lazy var MenuCollectionView: UICollectionView = {
@@ -52,52 +43,46 @@ class HomeViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        bindViewModel()
+        homeVM.updateMealData(for: "")
         addItemsToScrollView()
         setup()
     }
     
 }
 
-extension HomeViewController {
+private extension HomeViewController {
     func setup(){
         self.view.backgroundColor = .secondarySystemBackground
         self.navigationItem.title = "Choose Your Menu"
         self.navigationItem.searchController = UISearchController()
+        self.navigationItem.hidesSearchBarWhenScrolling = false
         
         view.addSubview(tagHScrollView)
-        view.addSubview(testLabel)
         tagHScrollView.addSubview(scrollHStackContent)
         view.addSubview(MenuCollectionView)
-        
         MenuCollectionView.delegate = self
         MenuCollectionView.dataSource = self
         MenuCollectionView.register(MenuCard.self, forCellWithReuseIdentifier: "menu")
+        
+        searchController.searchResultsUpdater = self searchController.obscuresBackgroundDuringPresentation = false searchController.searchBar.placeholder = "Search Fruits"
         
         configureAutoLayout()
         
         func configureAutoLayout(){
             NSLayoutConstraint.activate([
-                tagHScrollView.topAnchor.constraint(equalTo: view.topAnchor),
-                tagHScrollView.bottomAnchor.constraint(equalTo: view.centerYAnchor, constant: 10),
+                tagHScrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
                 tagHScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
                 tagHScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-                
+                tagHScrollView.heightAnchor.constraint(equalToConstant: 30),
                 
                 scrollHStackContent.leadingAnchor.constraint(equalTo: tagHScrollView.leadingAnchor),
                 scrollHStackContent.trailingAnchor.constraint(equalTo: tagHScrollView.trailingAnchor),
-//                scrollHStackContent.topAnchor.constraint(equalTo: tagHScrollView.topAnchor),
-//                scrollHStackContent.bottomAnchor.constraint(equalTo: tagHScrollView.bottomAnchor),
                 
-                testLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                testLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                testLabel.topAnchor.constraint(equalTo: tagHScrollView.bottomAnchor),
-                
-                
-                
-//                MenuCollectionView.topAnchor.constraint(equalTo: tagHScrollView.bottomAnchor),
-//                MenuCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-//                MenuCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-//                MenuCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+                MenuCollectionView.topAnchor.constraint(equalTo: tagHScrollView.bottomAnchor, constant: 10),
+                MenuCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+                MenuCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+                MenuCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
             ])
         }
     }
@@ -107,11 +92,13 @@ extension HomeViewController {
 extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return menuData.count
+        guard let count = homeVM.meals?.count else {return 0}
+        return count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "menu", for: indexPath) as! MenuCard
+        cell.meal = homeVM.meals?[indexPath.item]
         
         return cell
         
@@ -119,6 +106,10 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: view.frame.width/2 - 15, height: view.frame.height * 0.3)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        navigationController?.pushViewController(MenuDetailViewController(meal: homeVM.meals?[indexPath.item]), animated: true)
     }
 }
 
@@ -131,5 +122,19 @@ extension HomeViewController{
             filterTag.label.text = text
             scrollHStackContent.addArrangedSubview(filterTag)
         }
+    }
+}
+
+extension HomeViewController {
+    func bindViewModel() {
+        homeVM.onMealsUpdated = { [weak self] in
+            self?.MenuCollectionView.reloadData()
+        }
+    }
+}
+
+extension HomeViewController: UISearchBarDelegate, UISearchResultsUpdating{
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) { searchBar.resignFirstResponder()
     }
 }
